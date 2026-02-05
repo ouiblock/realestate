@@ -1,0 +1,19 @@
+{
+  "name": "@monprixjuste/estimation-hybride-immo",
+  "version": "1.0.0",
+  "description": "Moteur d'estimation hybride immobilière — MonPrixJuste × Je Partage Immo",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "src", "SPEC.md"],
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx src/__tests__/example.test.ts"
+  },
+  "keywords": ["estimation", "immobilier", "prix", "hybride", "dvf"],
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsx": "^4.7.0"
+  }
+}
