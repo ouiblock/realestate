@@ -1,6 +1,6 @@
 # Estimation Hybride Immobilière
 
-**Moteur de calcul d'estimation immobilière hybride** développé par MonPrixJuste, isolé pour intégration dans la plateforme **Je Partage Immo**.
+**Moteur de calcul + composant React** d'estimation immobilière hybride, développé par MonPrixJuste, isolé pour intégration dans la plateforme **Je Partage Immo**.
 
 ## Principe
 
@@ -11,75 +11,110 @@ Le moteur croise **3 familles de sources** pondérées par l'utilisateur, puis a
 ```
 estimation-hybride-immo/
 ├── src/
-│   ├── index.ts                    ← Point d'entrée (exports)
+│   ├── index.ts                        ← Point d'entrée (tous les exports)
 │   ├── types/
-│   │   └── index.ts                ← Contrats de données TypeScript
+│   │   └── index.ts                    ← Contrats de données TypeScript
 │   ├── calculation/
-│   │   └── calculatePrice.ts       ← Moteur de calcul (fonction pure, 0 dépendance)
+│   │   └── calculatePrice.ts           ← Moteur de calcul (fonction pure, 0 dépendance)
+│   ├── store/
+│   │   └── immoStore.ts                ← State management Zustand (persisté localStorage)
+│   ├── components/
+│   │   └── ImmoEstimationApp.tsx       ← Composant React complet (formulaires + résultats)
+│   ├── ui/
+│   │   ├── Button.tsx                  ← Composant bouton
+│   │   ├── Card.tsx                    ← Composant carte
+│   │   ├── Input.tsx                   ← Composant input
+│   │   └── index.ts                    ← Barrel export UI
 │   └── __tests__/
-│       └── example.test.ts         ← Exemple d'utilisation + tests basiques
-├── SPEC.md                         ← Spécification technique complète
+│       └── example.test.ts             ← Exemple d'utilisation + tests basiques
+├── SPEC.md                             ← Spécification technique complète
 ├── package.json
 └── tsconfig.json
 ```
 
-## Utilisation rapide
+## Ce que contient le package
 
-### 1. Installer les dépendances de dev
+### 1. Moteur de calcul pur (0 dépendance)
+- `calculateImmoPrice()` — fonction pure, portable partout (Node, Deno, navigateur, API)
+
+### 2. Composant React complet
+- **Formulaire du bien** — type, surface, adresse, ville, étage, etc.
+- **Sources de prix** — ajout/suppression de DVF Etalab, annonces (Leboncoin, SeLoger, PAP, Bien'ici), estimations pro (Meilleurs Agents, Yanport, agences)
+- **Ajustements qualitatifs** — état général, DPE, exposition, équipements, environnement
+- **Pondérations** — curseurs pour ajuster le poids de chaque famille de sources
+- **Résultats** — prix final, fourchette, score de confiance, positionnement marché
+
+### 3. Store Zustand
+- Gestion complète de l'état (bien, sources, pondérations, ajustements, résultat)
+- Persistance localStorage automatique
+
+## Installation
 
 ```bash
 npm install
 ```
 
-### 2. Lancer l'exemple
+## Utilisation
 
-```bash
-npx tsx src/__tests__/example.test.ts
+### Option A — Composant React complet
+
+```tsx
+import { ImmoEstimationApp } from '@monprixjuste/estimation-hybride-immo';
+
+function App() {
+  return <ImmoEstimationApp />;
+}
 ```
 
-### 3. Compiler
+> Nécessite React 18+, Tailwind CSS configuré dans votre projet.
 
-```bash
-npm run build
-```
-
-Les fichiers compilés seront dans `dist/`.
-
-### 4. Intégrer dans votre projet
+### Option B — Moteur de calcul seul (headless)
 
 ```typescript
-import { calculateImmoPrice } from './calculation/calculatePrice';
-import type { PropertyData, Sources, Ponderations, Ajustements } from './types';
+import { calculateImmoPrice } from '@monprixjuste/estimation-hybride-immo';
 
 const result = calculateImmoPrice(propertyData, sources, ponderations, ajustements);
 
 console.log(result.prixFinal);       // 335231
 console.log(result.prixM2);          // 5157
 console.log(result.scoreConfiance);  // 82
-console.log(result.positionMarche);  // "Au-dessus"
 ```
 
-## Fonction principale
+### Option C — Store Zustand seul
 
 ```typescript
-function calculateImmoPrice(
-  propertyData: PropertyData,   // Données du bien (surface, type, ville...)
-  sources: Sources,             // DVF + Annonces + Estimations pro
-  ponderations: Ponderations,   // Poids de chaque famille (% ajustables)
-  ajustements: Ajustements      // État, DPE, exposition, équipements...
-): CalculationResult            // Prix final, fourchette, score, détails
+import { useImmoStore } from '@monprixjuste/estimation-hybride-immo';
+
+function MyComponent() {
+  const { sources, addDVF, addAnnonce, addEstimation, calculate, calculationResult } = useImmoStore();
+  // ...
+}
 ```
 
-**C'est une fonction pure** : pas d'effet de bord, pas de state, pas de dépendance externe.  
-Elle peut être appelée côté serveur (Node.js, Deno, Bun) ou côté client.
+## Lancer l'exemple (moteur seul)
+
+```bash
+npx tsx src/__tests__/example.test.ts
+```
+
+## Dépendances
+
+| Package | Rôle | Requis pour |
+|---|---|---|
+| **zustand** | State management | Composant React + Store |
+| **lucide-react** | Icônes | Composant React |
+| **react** (peer) | Framework UI | Composant React |
+| **tailwindcss** | Styles | Composant React |
+
+> Le moteur de calcul (`calculatePrice.ts` + `types/index.ts`) n'a **aucune dépendance** et peut être extrait seul.
 
 ## Sources de prix
 
 | Source | Description | Pondération recommandée |
 |---|---|---|
-| **DVF** | Transactions réelles (données État) | 50% |
-| **Annonces** | Prix du marché (Leboncoin, SeLoger, PAP) | 30% |
-| **Estimations** | Avis d'experts (Meilleurs Agents, agences) | 20% |
+| **DVF Etalab** | Transactions réelles (données État) | 50% |
+| **Annonces** | Leboncoin, SeLoger, PAP, Bien'ici | 30% |
+| **Estimations** | Meilleurs Agents, Yanport, agences, notaires | 20% |
 
 ## Garde-fous anti-cumul
 
